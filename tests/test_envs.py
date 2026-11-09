@@ -571,7 +571,7 @@ class TestVllmConfigureLogging:
             if hasattr(envs.__getattr__, "cache_clear"):
                 envs.__getattr__.cache_clear()
 
-            with pytest.raises(ValueError, match="invalid literal for int"):
+            with pytest.raises(ValueError, match="VLLM_CONFIGURE_LOGGING"):
                 _ = envs.VLLM_CONFIGURE_LOGGING
 
 
@@ -625,3 +625,58 @@ class TestVllmMaxNSequences:
 
         with pytest.raises(VLLMValidationError, match="n must be at most 128"):
             SamplingParams(n=129)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("1", True),
+        ("true", True),
+        (" TRUE ", True),
+        ("0", False),
+        ("false", False),
+        (" False ", False),
+    ],
+)
+def test_convert_bool(value: str, expected: bool):
+    assert envs.convert_bool(value, "TEST_BOOL") is expected
+
+
+@pytest.mark.parametrize("value", ["", "2", "yes", "on"])
+def test_convert_bool_rejects_invalid_values(value: str):
+    with pytest.raises(ValueError, match="TEST_BOOL"):
+        envs.convert_bool(value, "TEST_BOOL")
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [("true", True), ("false", False), ("1", True), ("0", False)],
+)
+def test_env_bool_parses_boolean_values(
+    monkeypatch: pytest.MonkeyPatch, value: str, expected: bool
+):
+    monkeypatch.setenv("VLLM_BATCH_INVARIANT", value)
+    assert envs.VLLM_BATCH_INVARIANT is expected
+
+
+def test_env_bool_reports_invalid_value_and_name(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("VLLM_BATCH_INVARIANT", "2")
+    with pytest.raises(ValueError, match="VLLM_BATCH_INVARIANT"):
+        _ = envs.VLLM_BATCH_INVARIANT
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "VLLM_BATCH_INVARIANT",
+        "VLLM_NO_USAGE_STATS",
+        "VLLM_USE_HW_AGNOSTIC",
+        "VLLM_TRITON_USE_TD",
+    ],
+)
+@pytest.mark.parametrize(("value", "expected"), [("true", True), ("false", False)])
+def test_boolean_env_vars_parse_true_and_false(
+    monkeypatch: pytest.MonkeyPatch, name: str, value: str, expected: bool
+):
+    monkeypatch.setenv(name, value)
+    assert environment_variables[name]() is expected

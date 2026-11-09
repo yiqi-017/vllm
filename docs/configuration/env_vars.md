@@ -2,6 +2,12 @@
 
 vLLM uses the following environment variables to configure the system:
 
+Boolean environment variables accept `1` or `true` to enable, and `0` or `false`
+to disable. Values are case-insensitive and may have surrounding whitespace.
+Unset variables keep their documented defaults; optional boolean variables may
+remain unset. Other values raise a `ValueError` that names the variable.
+`NO_COLOR` and `FORCE_COLOR` retain their existing conventions.
+
 !!! warning
     Please note that `VLLM_PORT` and `VLLM_HOST_IP` set the port and ip for vLLM's **internal usage**. It is not the port and ip for the API server. If you use `--host $VLLM_HOST_IP` and `--port $VLLM_PORT` to start the API server, it will not work.
 
